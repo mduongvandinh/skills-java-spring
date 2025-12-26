@@ -277,15 +277,6 @@ openspec/
 
 ---
 
-## Expert Discussions
-
-Các cuộc thảo luận giữa AI experts về thiết kế và cải tiến:
-
-- [java-spring-skills Discussion](expert-discussion-java-spring-skills.md)
-- [Microservices Improvement Discussion](expert-discussion-microservices-improvement.md)
-
----
-
 ## License
 
 MIT License
