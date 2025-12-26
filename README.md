@@ -225,16 +225,31 @@ Cả 2 bộ skill đều hỗ trợ các AI IDE:
 | GitHub Copilot | `.github/copilot-instructions.md` |
 | Continue.dev | `.continuerc.json` |
 
-### OpenSpec (Microservices only)
+### OpenSpec (Spec-First Development)
+
+Cả 2 bộ skill đều hỗ trợ [OpenSpec](https://github.com/Fission-AI/OpenSpec) - **viết spec trước, code sau**:
 
 ```
-openspec/
-├── specs/           # Source of truth
-│   ├── services/    # Service patterns
-│   ├── events/      # Event flows
-│   └── api/         # API contracts
-└── changes/         # Proposed changes
+┌─────────┐    ┌─────────────┐    ┌───────────┐    ┌──────┐    ┌─────────┐
+│  Draft  │───▶│Review/Align │───▶│ Implement │───▶│ Ship │───▶│ Archive │
+│proposal │    │  with AI    │    │  tasks    │    │      │    │  specs  │
+└─────────┘    └─────────────┘    └───────────┘    └──────┘    └─────────┘
 ```
+
+**Cấu trúc chung:**
+```
+openspec/
+├── specs/           # Source of truth (current state)
+└── changes/         # Proposed changes (spec-first)
+    └── {feature}/
+        ├── proposal.md   # WHY - Rationale
+        ├── tasks.md      # HOW - Checklist
+        └── specs/        # WHAT - Delta (ADDED/MODIFIED/REMOVED)
+```
+
+**Ví dụ có sẵn:**
+- Monolithic: `java-spring-skills/openspec/changes/example-user-registration/`
+- Microservices: `java-spring-microservices/openspec/changes/example-add-inventory-service/`
 
 ---
 
