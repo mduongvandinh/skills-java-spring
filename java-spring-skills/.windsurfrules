@@ -1,0 +1,88 @@
+# Windsurf Rules for Java Spring Boot
+
+## Context
+Java 21 + Spring Boot 3.2.x + Maven project with optional modules (Redis, Kafka, OAuth2).
+
+## Code Generation Rules
+
+### Structure
+Generate code following this package structure:
+- config/ - @Configuration classes
+- controller/ - @RestController with /api prefix
+- service/ - Interface + Impl pattern
+- repository/ - JpaRepository interfaces
+- domain/ - @Entity with Lombok
+- dto/ - @Data @Builder classes
+- exception/ - RuntimeException subclasses
+
+### Patterns
+
+**Entity:**
+```java
+@Entity
+@Table(name = "users")
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
+public class User {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String username;
+}
+```
+
+**Service:**
+```java
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+    private final UserRepository repository;
+}
+```
+
+**Controller:**
+```java
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+public class UserController {
+    private final UserService service;
+}
+```
+
+**Test (TDD):**
+```java
+@ExtendWith(MockitoExtension.class)
+class ServiceTest {
+    @Mock Repository repo;
+    @InjectMocks ServiceImpl service;
+
+    @Test
+    @DisplayName("Description")
+    void testMethod() {
+        // Given - When - Then
+    }
+}
+```
+
+### Rules
+1. Always use Lombok (@Data, @Builder, @RequiredArgsConstructor, @Slf4j)
+2. Constructor injection only
+3. Return Optional<T> for nullable
+4. Use ApiResponse<T> wrapper
+5. Write test BEFORE implementation (TDD)
+6. Use @DisplayName on all tests
+7. Follow Given-When-Then in tests
+
+### API Response Format
+```java
+ApiResponse.success(data)
+ApiResponse.success(data, "message")
+ApiResponse.error("error message")
+```
+
+### Module Flags
+- modules.redis.enabled
+- modules.kafka.enabled
+- modules.oauth2.enabled

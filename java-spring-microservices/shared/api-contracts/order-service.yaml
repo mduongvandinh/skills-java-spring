@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: Order Service API
+  description: Order management microservice API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8082
+    description: Local development
+
+paths:
+  /api/orders:
+    get:
+      summary: Get orders
+      operationId: getOrders
+      tags:
+        - Orders
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED]
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderDto'
+
+    post:
+      summary: Create order
+      operationId: createOrder
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created
+
+  /api/orders/{id}:
+    get:
+      summary: Get order by ID
+      operationId: getOrderById
+      tags:
+        - Orders
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Order found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDto'
+
+components:
+  schemas:
+    OrderDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemDto'
+        totalAmount:
+          type: number
+          format: decimal
+        createdAt:
+          type: string
+          format: date-time
+
+    OrderItemDto:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+          format: decimal
+
+    CreateOrderRequest:
+      type: object
+      required:
+        - userId
+        - items
+      properties:
+        userId:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: integer
+                format: int64
+              quantity:
+                type: integer
+                minimum: 1

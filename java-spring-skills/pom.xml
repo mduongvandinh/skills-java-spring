@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.company</groupId>
+    <artifactId>spring-boot-app</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Spring Boot Application</name>
+    <description>Modular Spring Boot Application with Optional Components</description>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.1</version>
+        <relativePath/>
+    </parent>
+
+    <properties>
+        <java.version>21</java.version>
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
+
+        <!-- Optional Module Flags -->
+        <module.postgresql.enabled>true</module.postgresql.enabled>
+        <module.redis.enabled>false</module.redis.enabled>
+        <module.kafka.enabled>false</module.kafka.enabled>
+        <module.rabbitmq.enabled>false</module.rabbitmq.enabled>
+        <module.oauth2.enabled>false</module.oauth2.enabled>
+        <module.docker.enabled>false</module.docker.enabled>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Database -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>42.7.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>10.4.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-database-postgresql</artifactId>
+                <version>10.4.1</version>
+            </dependency>
+
+            <!-- Security -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>0.12.3</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>0.12.3</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>0.12.3</version>
+            </dependency>
+
+            <!-- Testing -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>1.19.3</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- Core Dependencies (Always included) -->
+    <dependencies>
+        <!-- Spring Boot Starters -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- JWT (Default ON) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Database (PostgreSQL - Default ON) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!-- Maven Profiles for Optional Modules -->
+    <profiles>
+        <!-- PostgreSQL Profile (Default ON) -->
+        <profile>
+            <id>with-postgresql</id>
+            <activation>
+                <property>
+                    <name>module.postgresql.enabled</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-jpa</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.postgresql</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-database-postgresql</artifactId>
+                </dependency>
+                <!-- Testcontainers for PostgreSQL -->
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Redis Profile -->
+        <profile>
+            <id>with-redis</id>
+            <activation>
+                <property>
+                    <name>module.redis.enabled</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-redis</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Kafka Profile -->
+        <profile>
+            <id>with-kafka</id>
+            <activation>
+                <property>
+                    <name>module.kafka.enabled</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.kafka</groupId>
+                    <artifactId>spring-kafka</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.kafka</groupId>
+                    <artifactId>spring-kafka-test</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- RabbitMQ Profile -->
+        <profile>
+            <id>with-rabbitmq</id>
+            <activation>
+                <property>
+                    <name>module.rabbitmq.enabled</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-amqp</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.amqp</groupId>
+                    <artifactId>spring-rabbit-test</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- OAuth2 Profile -->
+        <profile>
+            <id>with-oauth2</id>
+            <activation>
+                <property>
+                    <name>module.oauth2.enabled</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-oauth2-client</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- API Documentation Profile -->
+        <profile>
+            <id>with-api-docs</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springdoc</groupId>
+                    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                    <version>2.3.0</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Full Stack Profile -->
+        <profile>
+            <id>full-stack</id>
+            <properties>
+                <module.postgresql.enabled>true</module.postgresql.enabled>
+                <module.redis.enabled>true</module.redis.enabled>
+                <module.kafka.enabled>true</module.kafka.enabled>
+                <module.oauth2.enabled>true</module.oauth2.enabled>
+            </properties>
+        </profile>
+
+        <!-- Minimal Profile -->
+        <profile>
+            <id>minimal</id>
+            <properties>
+                <module.postgresql.enabled>true</module.postgresql.enabled>
+                <module.redis.enabled>false</module.redis.enabled>
+                <module.kafka.enabled>false</module.kafka.enabled>
+                <module.rabbitmq.enabled>false</module.rabbitmq.enabled>
+                <module.oauth2.enabled>false</module.oauth2.enabled>
+            </properties>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

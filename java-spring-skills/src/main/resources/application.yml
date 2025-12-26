@@ -1,0 +1,185 @@
+# =============================================================================
+# Spring Boot Application Configuration
+# =============================================================================
+
+spring:
+  application:
+    name: spring-boot-app
+
+  # Jackson Configuration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# =============================================================================
+# Module Configuration Flags
+# =============================================================================
+modules:
+  postgresql:
+    enabled: true
+  redis:
+    enabled: ${MODULE_REDIS_ENABLED:false}
+  kafka:
+    enabled: ${MODULE_KAFKA_ENABLED:false}
+  rabbitmq:
+    enabled: ${MODULE_RABBITMQ_ENABLED:false}
+  oauth2:
+    enabled: ${MODULE_OAUTH2_ENABLED:false}
+
+# =============================================================================
+# JWT Configuration
+# =============================================================================
+jwt:
+  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationMinimum256BitsLong}
+  access-token-expiration: 3600000      # 1 hour
+  refresh-token-expiration: 604800000   # 7 days
+
+# =============================================================================
+# Actuator Configuration
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.company: DEBUG
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# =============================================================================
+# Local Profile (Without Docker)
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spring_app
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  redis:
+    host: localhost
+    port: 6379
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+---
+# =============================================================================
+# Docker Profile (Full Docker Deployment)
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/spring_app
+    username: postgres
+    password: postgres
+
+  redis:
+    host: redis
+    port: 6379
+
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+
+---
+# =============================================================================
+# Development Profile
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  jpa:
+    show-sql: true
+
+modules:
+  redis:
+    enabled: true
+  kafka:
+    enabled: true
+
+logging:
+  level:
+    com.company: DEBUG
+
+---
+# =============================================================================
+# Production Profile
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    show-sql: false
+
+  flyway:
+    clean-disabled: true
+
+modules:
+  redis:
+    enabled: true
+  kafka:
+    enabled: true
+  oauth2:
+    enabled: true
+
+logging:
+  level:
+    root: WARN
+    com.company: INFO

@@ -1,0 +1,114 @@
+# Cursor Rules for Java Spring Boot Project
+
+You are an expert Java Spring Boot developer. Follow these rules strictly.
+
+## Project Context
+- Java 21 + Spring Boot 3.2.x + Maven
+- PostgreSQL, Redis (optional), Kafka/RabbitMQ (optional)
+- TDD with Mockito, Clean Architecture
+
+## Code Style
+
+### Always Use
+- Lombok annotations: @Data, @Builder, @RequiredArgsConstructor, @Slf4j
+- Constructor injection (never field @Autowired)
+- Optional<T> for nullable returns
+- @DisplayName on tests
+- Given-When-Then pattern in tests
+
+### Naming Conventions
+- Classes: PascalCase (UserService)
+- Methods: camelCase (findById)
+- Constants: UPPER_SNAKE_CASE
+- Packages: lowercase
+
+### Package Structure
+```
+com.company.app/
+├── config/       # Configuration
+├── controller/   # REST controllers
+├── service/      # Business logic
+├── repository/   # Data access
+├── domain/       # Entities
+├── dto/          # DTOs
+└── exception/    # Custom exceptions
+```
+
+## Patterns to Follow
+
+### Service Layer
+```java
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+    private final UserRepository userRepository;
+
+    @Override
+    public Optional<UserDto> findById(Long id) {
+        log.debug("Finding user by id: {}", id);
+        return userRepository.findById(id)
+            .map(this::toDto);
+    }
+}
+```
+
+### Controller Layer
+```java
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+public class UserController {
+    private final UserService userService;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserDto>> getById(@PathVariable Long id) {
+        return userService.findById(id)
+            .map(u -> ResponseEntity.ok(ApiResponse.success(u)))
+            .orElse(ResponseEntity.notFound().build());
+    }
+}
+```
+
+### Unit Test
+```java
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private UserServiceImpl userService;
+
+    @Test
+    @DisplayName("Should return user when found")
+    void shouldReturnUserWhenFound() {
+        // Given
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        // When
+        var result = userService.findById(1L);
+
+        // Then
+        assertThat(result).isPresent();
+    }
+}
+```
+
+## TDD Workflow
+1. Write failing test (RED)
+2. Minimal code to pass (GREEN)
+3. Refactor while green (REFACTOR)
+
+## Don't Do
+- Don't use field injection (@Autowired on fields)
+- Don't return null, use Optional
+- Don't write tests without @DisplayName
+- Don't skip Given-When-Then structure
+- Don't commit secrets or .env files
+- Don't use System.out, use @Slf4j
+
+## Commands
+- Run: `mvn spring-boot:run -Dspring-boot.run.profiles=local`
+- Test: `mvn test`
+- Build: `mvn clean package`

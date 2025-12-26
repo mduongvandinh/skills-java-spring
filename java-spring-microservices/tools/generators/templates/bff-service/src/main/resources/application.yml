@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: {{SERVICE_NAME}}-bff
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=5m
+
+server:
+  port: 808X  # Change this
+
+# Backend service URLs
+services:
+  user-service:
+    url: http://localhost:8081
+  order-service:
+    url: http://localhost:8082
+  payment-service:
+    url: http://localhost:8083
+
+# Feign
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+
+# Resilience4j
+resilience4j:
+  circuitbreaker:
+    instances:
+      dashboard:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,caches

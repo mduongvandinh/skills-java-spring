@@ -1,0 +1,101 @@
+# Windsurf Rules - Java Spring Microservices
+
+## Project Context
+Enterprise microservices architecture using Spring Boot 3.2 and Spring Cloud.
+Each service is independent with its own database (Database per Service pattern).
+
+## Architecture
+- **Gateway Service** (Port 8080): API Gateway with Spring Cloud Gateway
+- **Core Services**: Business logic with PostgreSQL database
+- **Event Services**: Kafka consumers for async processing
+- **BFF Services**: Backend for Frontend aggregators
+
+## Code Generation Rules
+
+### Creating New Service
+1. Use generator: `.\tools\generators\new-service.ps1 -Name "{name}" -Type "{type}"`
+2. Types: core, event, gateway, bff
+3. Follow existing port convention (8081, 8082, 8083...)
+
+### Package Structure (Core Service)
+```
+com.company.{service}/
+├── domain/           # Entities, Repositories
+├── application/      # Use Cases, DTOs
+├── infrastructure/   # JPA, Kafka, Feign
+└── interfaces/       # Controllers, Event Handlers
+```
+
+### Use Case Pattern
+```java
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class CreateXxxUseCase {
+    private final XxxRepository repository;
+    private final OtherServiceClient otherClient;
+    private final XxxEventPublisher publisher;
+
+    public XxxDto execute(CreateXxxRequest request) {
+        // 1. Validate with external service
+        // 2. Create entity
+        // 3. Publish event
+        return toDto(entity);
+    }
+}
+```
+
+### Feign Client Pattern
+```java
+@FeignClient(name = "other-service", fallbackFactory = OtherClientFallback.class)
+public interface OtherServiceClient {
+    @GetMapping("/api/others/{id}")
+    OtherDto getById(@PathVariable Long id);
+}
+```
+
+### Event Publishing
+```java
+kafkaTemplate.send("xxx-events", XxxCreatedEvent.builder()
+    .eventId(UUID.randomUUID().toString())
+    .timestamp(Instant.now())
+    .build());
+```
+
+### Event Consuming
+```java
+@KafkaListener(topics = "xxx-events", groupId = "${spring.kafka.consumer.group-id}")
+public void handleXxxEvent(XxxCreatedEvent event) {
+    // Idempotency check first
+    if (processedEvents.contains(event.getEventId())) return;
+    // Process event
+}
+```
+
+## Communication Patterns
+
+| Pattern | Use Case | Technology |
+|---------|----------|------------|
+| Sync | Queries, immediate response | REST/Feign |
+| Async | State changes, notifications | Kafka |
+
+## Important Files
+- `docs/architecture/overview.md` - System architecture
+- `docs/architecture/event-flows.md` - Event topics and flows
+- `shared/api-contracts/` - OpenAPI specifications
+- `tools/generators/` - Service generators
+
+## Testing
+- Unit tests with Mockito
+- Integration tests with @SpringBootTest
+- Contract tests for Feign clients
+
+## Deployment
+- Local: `docker-compose up -d` (infrastructure/docker/)
+- K8s: `kubectl apply -k infrastructure/kubernetes/base`
+
+## DO NOT
+- Create synchronous chains > 3 services
+- Share databases between services
+- Skip event idempotency checks
+- Hardcode service URLs (use service discovery)

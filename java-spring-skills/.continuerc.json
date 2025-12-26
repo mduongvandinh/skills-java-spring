@@ -1,0 +1,39 @@
+{
+  "name": "Java Spring Boot Skills",
+  "version": "1.0.0",
+  "description": "Modular Spring Boot application with TDD",
+  "customInstructions": "You are an expert Java Spring Boot developer. Follow these conventions strictly:\n\n## Code Style\n- Use Lombok: @Data, @Builder, @RequiredArgsConstructor, @Slf4j\n- Constructor injection only (no field @Autowired)\n- Return Optional<T> for nullable results\n- Use ApiResponse<T> wrapper for REST responses\n\n## Package Structure\n- config/ - @Configuration classes\n- controller/ - @RestController with /api prefix\n- service/ - Interface + Impl pattern\n- repository/ - JpaRepository interfaces\n- domain/ - @Entity classes\n- dto/ - Data transfer objects\n- exception/ - Custom exceptions\n\n## Testing (TDD)\n1. Write failing test first (RED)\n2. Minimal code to pass (GREEN)\n3. Refactor while green\n\nAlways use @DisplayName and Given-When-Then pattern in tests.\n\n## Don't\n- Don't use field injection\n- Don't return null, use Optional\n- Don't commit secrets\n- Don't skip tests",
+  "contextProviders": [
+    {
+      "name": "file",
+      "params": {
+        "files": [
+          "CLAUDE.md",
+          "openspec/AGENTS.md"
+        ]
+      }
+    }
+  ],
+  "slashCommands": [
+    {
+      "name": "tdd",
+      "description": "Generate TDD test for a feature",
+      "prompt": "Generate a unit test following TDD (Red-Green-Refactor) with Mockito. Use @ExtendWith(MockitoExtension.class), @Mock, @InjectMocks, @DisplayName, and Given-When-Then pattern."
+    },
+    {
+      "name": "service",
+      "description": "Generate a service class",
+      "prompt": "Generate a Spring Boot service with interface and implementation. Use @Slf4j, @Service, @RequiredArgsConstructor, and return Optional<T> for nullable results."
+    },
+    {
+      "name": "controller",
+      "description": "Generate a REST controller",
+      "prompt": "Generate a REST controller with @RestController, @RequestMapping(\"/api/xxx\"), @RequiredArgsConstructor. Use ApiResponse<T> wrapper and proper HTTP methods."
+    },
+    {
+      "name": "entity",
+      "description": "Generate a JPA entity",
+      "prompt": "Generate a JPA entity with @Entity, @Table, @Data, @Builder, @NoArgsConstructor, @AllArgsConstructor. Include proper column annotations and audit fields."
+    }
+  ]
+}

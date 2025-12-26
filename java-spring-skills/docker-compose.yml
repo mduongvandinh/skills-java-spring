@@ -1,0 +1,227 @@
+version: '3.8'
+
+# =============================================================================
+# Spring Boot Application - Docker Compose
+# =============================================================================
+# Usage:
+#   docker compose up -d                              # Start PostgreSQL only
+#   docker compose --profile with-redis up -d         # + Redis
+#   docker compose --profile with-kafka up -d         # + Kafka
+#   docker compose --profile with-rabbitmq up -d      # + RabbitMQ
+#   docker compose --profile with-app up -d           # + Application
+#
+# Environment variables:
+#   ENABLE_REDIS=true docker compose up -d
+#   ENABLE_KAFKA=true docker compose up -d
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database (Always ON)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: myapp-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-spring_app}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - myapp-network
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache (Optional)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: myapp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - with-redis
+    networks:
+      - myapp-network
+
+  # ---------------------------------------------------------------------------
+  # Apache Kafka (Optional)
+  # ---------------------------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: myapp-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    profiles:
+      - with-kafka
+    networks:
+      - myapp-network
+
+  # ---------------------------------------------------------------------------
+  # Kafka UI (Optional - comes with Kafka)
+  # ---------------------------------------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: myapp-kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+    profiles:
+      - with-kafka
+    networks:
+      - myapp-network
+
+  # ---------------------------------------------------------------------------
+  # RabbitMQ (Optional)
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: myapp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    profiles:
+      - with-rabbitmq
+    networks:
+      - myapp-network
+
+  # ---------------------------------------------------------------------------
+  # Spring Boot Application (Optional - for full Docker deployment)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myapp
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-spring_app}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Modules
+      MODULE_REDIS_ENABLED: ${ENABLE_REDIS:-false}
+      MODULE_KAFKA_ENABLED: ${ENABLE_KAFKA:-false}
+      MODULE_RABBITMQ_ENABLED: ${ENABLE_RABBITMQ:-false}
+      # Redis (if enabled)
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      # Kafka (if enabled)
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # RabbitMQ (if enabled)
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - with-app
+    networks:
+      - myapp-network
+
+  # ---------------------------------------------------------------------------
+  # Prometheus (Optional - Monitoring)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: myapp-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    profiles:
+      - with-monitoring
+    networks:
+      - myapp-network
+
+  # ---------------------------------------------------------------------------
+  # Grafana (Optional - Monitoring)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: myapp-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    profiles:
+      - with-monitoring
+    networks:
+      - myapp-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+  redis_data:
+  kafka_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  myapp-network:
+    driver: bridge

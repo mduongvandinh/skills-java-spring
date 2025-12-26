@@ -1,0 +1,105 @@
+{
+  "name": "Java Spring Microservices",
+  "version": "1.0.0",
+  "description": "Enterprise microservices architecture with Spring Boot and Spring Cloud",
+  "rules": [
+    {
+      "name": "architecture",
+      "description": "Microservices architecture patterns",
+      "patterns": [
+        "Use Database per Service pattern - each service owns its data",
+        "Communicate synchronously via REST/Feign for queries",
+        "Communicate asynchronously via Kafka for state changes",
+        "Use API Gateway (Spring Cloud Gateway) as single entry point",
+        "Implement circuit breaker with Resilience4j for fault tolerance"
+      ]
+    },
+    {
+      "name": "service-types",
+      "description": "Four types of services",
+      "patterns": [
+        "Core Service: Business logic with PostgreSQL database",
+        "Event Service: Kafka consumer only, no REST API",
+        "Gateway Service: API routing, rate limiting, auth",
+        "BFF Service: Backend for Frontend, aggregates multiple services"
+      ]
+    },
+    {
+      "name": "package-structure",
+      "description": "DDD package structure for core services",
+      "patterns": [
+        "domain/ - Entities, Value Objects, Repositories",
+        "application/ - Use Cases, DTOs, Mappers",
+        "infrastructure/ - JPA implementations, Kafka, Feign clients",
+        "interfaces/ - REST Controllers, Event Handlers"
+      ]
+    },
+    {
+      "name": "use-case-pattern",
+      "description": "Application layer pattern",
+      "template": "@Service\n@RequiredArgsConstructor\n@Transactional\npublic class Create{Entity}UseCase {\n    private final {Entity}Repository repository;\n    private final OtherServiceClient otherClient;\n    private final {Entity}EventPublisher publisher;\n\n    public {Entity}Dto execute(Create{Entity}Request request) {\n        // 1. Validate with external service\n        // 2. Create and save entity\n        // 3. Publish domain event\n        return toDto(entity);\n    }\n}"
+    },
+    {
+      "name": "feign-client",
+      "description": "Inter-service communication",
+      "template": "@FeignClient(name = \"{service}-service\", fallbackFactory = {Service}ClientFallback.class)\npublic interface {Service}ServiceClient {\n    @GetMapping(\"/api/{entities}/{id}\")\n    {Entity}Dto getById(@PathVariable Long id);\n}"
+    },
+    {
+      "name": "event-publishing",
+      "description": "Kafka event publishing",
+      "template": "kafkaTemplate.send(\"{entity}-events\", {Entity}CreatedEvent.builder()\n    .eventId(UUID.randomUUID().toString())\n    .timestamp(Instant.now())\n    .build());"
+    },
+    {
+      "name": "event-consuming",
+      "description": "Kafka event consuming with idempotency",
+      "template": "@KafkaListener(topics = \"{entity}-events\", groupId = \"${spring.kafka.consumer.group-id}\")\npublic void handle{Entity}Event({Entity}CreatedEvent event) {\n    if (processedEvents.contains(event.getEventId())) {\n        log.warn(\"Duplicate event: {}\", event.getEventId());\n        return;\n    }\n    // Process event\n    processedEvents.add(event.getEventId());\n}"
+    }
+  ],
+  "commands": {
+    "new-core-service": {
+      "description": "Create new core service with database",
+      "command": ".\\tools\\generators\\new-service.ps1 -Name \"{name}\" -Type \"core\""
+    },
+    "new-event-service": {
+      "description": "Create new event consumer service",
+      "command": ".\\tools\\generators\\new-service.ps1 -Name \"{name}\" -Type \"event\""
+    },
+    "new-bff-service": {
+      "description": "Create new BFF service",
+      "command": ".\\tools\\generators\\new-service.ps1 -Name \"{name}\" -Type \"bff\""
+    },
+    "start-infra": {
+      "description": "Start infrastructure (Postgres, Kafka, Redis)",
+      "command": "cd infrastructure\\docker && docker-compose up -d"
+    },
+    "build-all": {
+      "description": "Build all modules",
+      "command": "mvn clean package"
+    },
+    "deploy-k8s": {
+      "description": "Deploy to Kubernetes",
+      "command": "kubectl apply -k infrastructure/kubernetes/base"
+    }
+  },
+  "references": {
+    "architecture": "docs/architecture/overview.md",
+    "event-flows": "docs/architecture/event-flows.md",
+    "api-contracts": "shared/api-contracts/",
+    "common-lib": "shared/common-lib/",
+    "event-lib": "shared/event-lib/",
+    "templates": "tools/generators/templates/"
+  },
+  "codeStyle": {
+    "language": "java",
+    "version": "21",
+    "framework": "Spring Boot 3.2",
+    "buildTool": "Maven",
+    "testing": "JUnit 5 + Mockito",
+    "annotations": [
+      "@Slf4j for logging",
+      "@RequiredArgsConstructor for constructor injection",
+      "@Transactional for use cases",
+      "@Valid for request validation"
+    ]
+  }
+}

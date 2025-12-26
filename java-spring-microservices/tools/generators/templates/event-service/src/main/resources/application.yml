@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: {{SERVICE_NAME}}-service
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.company.event.*
+
+# Kafka topics
+app:
+  kafka:
+    topics:
+      user-events: user-events
+      order-events: order-events
+      payment-events: payment-events
+
+# Actuator (for health checks in K8s)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# Logging
+logging:
+  level:
+    com.company: DEBUG
+    org.apache.kafka: WARN

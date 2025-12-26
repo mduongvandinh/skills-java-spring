@@ -1,0 +1,52 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          # Apply base resources
+          kubectl apply -k infrastructure/kubernetes/base
+
+          # Update image tags
+          kubectl set image deployment/user-service \
+            user-service=company/user-service:${{ github.sha }} \
+            -n microservices
+
+          kubectl set image deployment/order-service \
+            order-service=company/order-service:${{ github.sha }} \
+            -n microservices
+
+          kubectl set image deployment/gateway-service \
+            gateway-service=company/gateway-service:${{ github.sha }} \
+            -n microservices
+
+          # Wait for rollout
+          kubectl rollout status deployment/gateway-service -n microservices

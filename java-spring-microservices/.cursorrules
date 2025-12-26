@@ -1,0 +1,69 @@
+# Cursor Rules - Java Spring Microservices
+
+You are an expert in Java Spring Boot Microservices with DDD.
+
+## Architecture
+
+This is a microservices project with:
+- Domain-Driven Design (DDD) package structure
+- REST for sync, Kafka for async communication
+- PostgreSQL per service (database per service pattern)
+- Shared libraries: common-lib, event-lib
+
+## Package Structure (Core Service)
+
+```
+com.company.{service}/
+├── domain/           # Entities, Repositories, Domain Services
+├── application/      # Use Cases, DTOs, Mappers
+├── infrastructure/   # JPA, Kafka, Feign
+└── interfaces/       # Controllers, Event Handlers
+```
+
+## Code Patterns
+
+### Use Case Pattern
+```java
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class Create{Entity}UseCase {
+    private final {Entity}Repository repository;
+    private final EventPublisher publisher;
+
+    public {Entity}Dto execute(Create{Entity}Request request) {
+        // Implementation
+    }
+}
+```
+
+### Event Publishing
+```java
+// Always publish events after state changes
+eventPublisher.publish{Entity}Created(entity);
+```
+
+### Feign with Fallback
+```java
+@FeignClient(name = "x-service", fallbackFactory = XClientFallback.class)
+public interface XServiceClient { }
+```
+
+## Rules
+
+1. Domain logic in domain layer, not in controllers
+2. Use DTOs for APIs, never expose entities
+3. Publish events after every state change
+4. Implement Circuit Breaker for all external calls
+5. Use shared common-lib for ApiResponse, exceptions
+6. Use shared event-lib for domain events
+7. Each service owns its database
+8. Use Testcontainers for integration tests
+
+## Don't
+
+- Don't call other services from domain layer
+- Don't share databases between services
+- Don't use synchronous calls for notifications
+- Don't skip event publishing on state changes

@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  description: User management microservice API
+  version: 1.0.0
+  contact:
+    name: API Team
+
+servers:
+  - url: http://localhost:8081
+    description: Local development
+  - url: http://user-service:8081
+    description: Kubernetes internal
+
+paths:
+  /api/users:
+    get:
+      summary: Get all users
+      operationId: getAllUsers
+      tags:
+        - Users
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedUserResponse'
+
+    post:
+      summary: Create a new user
+      operationId: createUser
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/users/{id}:
+    get:
+      summary: Get user by ID
+      operationId: getUserById
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+
+    put:
+      summary: Update user
+      operationId: updateUser
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+
+    delete:
+      summary: Delete user
+      operationId: deleteUser
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: User deleted
+
+components:
+  schemas:
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - email
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        active:
+          type: boolean
+
+    ApiResponse:
+      type: object
+      properties:
+        data:
+          type: object
+        message:
+          type: string
+        success:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    UserResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserDto'
+
+    PagedUserResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserDto'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer

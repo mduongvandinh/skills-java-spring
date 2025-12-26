@@ -1,0 +1,37 @@
+# Test Configuration
+# Used when running tests with @ActiveProfiles("test")
+
+spring:
+  application:
+    name: spring-boot-app-test
+
+  # Disable database for unit tests (use in-memory service)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+  # Disable security for tests
+  security:
+    enabled: false
+
+# Disable all optional modules for tests
+modules:
+  postgresql:
+    enabled: false
+  redis:
+    enabled: false
+  kafka:
+    enabled: false
+  rabbitmq:
+    enabled: false
+  oauth2:
+    enabled: false
+
+# Logging
+logging:
+  level:
+    root: WARN
+    com.company.app: DEBUG
+    org.springframework.security: DEBUG
